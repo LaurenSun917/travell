@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>捷奧不馴 Travel Pro</title>
+    <!-- 載入必要 CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { 
+            font-family: 'Inter', -apple-system, "Microsoft JhengHei", sans-serif; 
+            background-color: black; 
+            color: white; 
+            margin: 0; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pulse-purple {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.3); }
+        }
+        .animate-glow { animation: pulse-purple 2s infinite; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // 圖標元件封裝
+        const Icon = ({ name, size = 20, className = "" }) => {
+            useEffect(() => { if (window.lucide) window.lucide.createIcons(); }, [name]);
+            return <i data-lucide={name} className={className} style={{ width: size, height: size }}></i>;
+        };
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('home');
+            const [currentTime, setCurrentTime] = useState(new Date());
+            
+            // 編輯模式狀態開關
+            const [editStates, setEditStates] = useState({
+                itinerary: false,
+                transport: false,
+                packing: false,
+                souvenir: false
+            });
+
+            // --- 1. 完整行程數據 (1/06 - 1/14) ---
+            const [itinerary, setItinerary] = useState([
+                { date: '2026-01-06', day: 'Day 1', events: [{ id: 101, time: '23:45', location: '臺灣桃園國際機場', note: '出發' }] },
+                { date: '2026-01-07', day: 'Day 2', events: [
+                    { id: 201, time: '07:40', location: '布拉格國際機場', note: '抵達' },
+                    { id: 202, time: '09:49', location: 'Grandior Hotel Prague', note: '放行李' },
+                    { id: 203, time: '10:16', location: '哈維爾市集', note: '' },
+                    { id: 204, time: '11:06', location: 'Cinnamood', note: '' },
+                    { id: 205, time: '11:36', location: '老城廣場', note: '' },
+                    { id: 206, time: '12:38', location: '泰恩教堂', note: '' },
+                    { id: 207, time: '13:27', location: 'Pasta Fresca', note: '' },
+                    { id: 208, time: '15:01', location: '布拉格天文鐘', note: '' },
+                    { id: 209, time: '15:53', location: '火藥塔', note: '' },
+                    { id: 210, time: '16:53', location: 'Prague Venice Boat Trip', note: '' },
+                    { id: 211, time: '18:09', location: 'Bredovský Dvůr', note: '' },
+                    { id: 212, time: '19:50', location: 'Grandior Hotel Prague', note: '回飯店休息' }
+                ]},
+                { date: '2026-01-08', day: 'Day 3', events: [
+                    { id: 301, time: '08:30', location: 'Grandior Hotel Prague', note: '' },
+                    { id: 302, time: '08:59', location: '布拉格城堡', note: '' },
+                    { id: 303, time: '12:07', location: 'Kuchyň', note: '' },
+                    { id: 304, time: '13:51', location: '列儂牆', note: '' },
+                    { id: 305, time: '14:18', location: '查理大橋', note: '' },
+                    { id: 306, time: '15:08', location: '克萊門特學院', note: '' },
+                    { id: 307, time: '16:12', location: 'FAT CAT Old Town', note: '' },
+                    { id: 308, time: '17:27', location: 'Grandior Hotel Prague', note: '' }
+                ]},
+                { date: '2026-01-09', day: 'Day 4', events: [
+                    { id: 401, time: '08:30', location: 'Grandior Hotel Prague', note: '' },
+                    { id: 402, time: '09:06', location: '斯特拉霍夫', note: '' },
+                    { id: 403, time: '10:50', location: '佩特任瞭望塔', note: '' },
+                    { id: 404, time: '12:20', location: 'Café Imperial', note: '' },
+                    { id: 405, time: '14:08', location: '布拉格國家博物館', note: '' },
+                    { id: 406, time: '16:20', location: 'Grandior Hotel Prague', note: '' }
+                ]},
+                { date: '2026-01-10', day: 'Day 5', events: [
+                    { id: 501, time: '05:40', location: 'Grandior Hotel Prague', note: '' },
+                    { id: 502, time: '06:00', location: '布拉格火車總站', note: 'RJ53' },
+                    { id: 503, time: '10:46', location: 'Vienna Central Station', note: '抵達' },
+                    { id: 504, time: '11:04', location: 'Prize by Radisson, Vienna City', note: '放行李' },
+                    { id: 505, time: '12:28', location: 'NENI am Naschmarkt', note: '' },
+                    { id: 506, time: '14:02', location: '美泉宮', note: '' },
+                    { id: 507, time: '17:43', location: '藝術史博物館', note: '' },
+                    { id: 508, time: '19:18', location: '美景宮', note: '' },
+                    { id: 509, time: '20:28', location: 'Prize by Radisson, Vienna City', note: '' }
+                ]},
+                { date: '2026-01-11', day: 'Day 6', events: [
+                    { id: 601, time: '05:00', location: 'Prize by Radisson, Vienna City', note: '' },
+                    { id: 602, time: '05:10', location: 'Vienna Central Station', note: 'IC540' },
+                    { id: 603, time: '08:08', location: 'Attnang-Puchheim', note: '轉乘' },
+                    { id: 604, time: '09:47', location: 'Hallstatt', note: '抵達' },
+                    { id: 605, time: '11:01', location: 'Marketplace Hallstatt', note: '' },
+                    { id: 606, time: '15:32', location: 'Hallstatt Station', note: 'R70 回程' },
+                    { id: 607, time: '19:03', location: 'Vienna Central Station', note: '' }
+                ]},
+                { date: '2026-01-12', day: 'Day 7', events: [
+                    { id: 701, time: '07:45', location: '卡爾教堂', note: '' },
+                    { id: 702, time: '08:57', location: '維也納國家歌劇院', note: '' },
+                    { id: 703, time: '10:56', location: '奧地利國家圖書館', note: '' },
+                    { id: 704, time: '11:30', location: 'Sisi Museum', note: '' },
+                    { id: 705, time: '13:41', location: '聖斯德望主教座堂', note: '' },
+                    { id: 706, time: '16:30', location: 'Steak Point', note: '' }
+                ]},
+                { date: '2026-01-13', day: 'Day 8', events: [
+                    { id: 801, time: '07:10', location: 'Wien Mitte', note: '搭乘 CAT' },
+                    { id: 802, time: '07:59', location: '維也納國際機場', note: '' }
+                ]},
+                { date: '2026-01-14', day: 'Day 9', events: [{ id: 901, time: '05:30', location: '臺灣桃園國際機場', note: '抵家' }] }
+            ]);
+
+            // --- 2. 交通數據 ---
+            const [transportation, setTransportation] = useState([
+                { id: 1, date: '1/10', from: 'PRG', fromFull: '布拉格 (06:37)', to: 'VIE', toFull: '維也納 (10:49)', trainNo: 'RJ53', platform: '--', carNo: '368', seatNo: '32, 38' },
+                { id: 2, date: '1/11 去程(1)', from: 'VIE', fromFull: '維也納 (05:57)', to: 'ATT', toFull: '轉乘 (08:08)', trainNo: 'IC540', platform: '--', carNo: '4', seatNo: '131, 135' },
+                { id: 3, date: '1/11 去程(2)', from: 'ATT', fromFull: '轉乘 (08:08)', to: 'HAL', toFull: '哈爾施塔特 (09:47)', trainNo: 'R70', platform: '--', carNo: '自由座', seatNo: '自由座' },
+                { id: 4, date: '1/11 回程(1)', from: 'HAL', fromFull: '哈爾施塔特 (15:32)', to: 'ATT', toFull: '轉乘 (17:01)', trainNo: 'R70', platform: '--', carNo: '自由座', seatNo: '自由座' },
+                { id: 5, date: '1/11 回程(2)', from: 'ATT', fromFull: '轉乘 (17:01)', to: 'VIE', toFull: '維也納 (19:03)', trainNo: 'IC743', platform: '--', carNo: '6', seatNo: '144, 148' }
+            ]);
+
+            // --- 3. 行李清單 ---
+            const [packingList, setPackingList] = useState([
+                { id: 1, item: '護照/電子機票', checked: true },
+                { id: 2, item: '歐元現金/信用卡', checked: false },
+                { id: 3, item: '萬國轉接頭', checked: false },
+                { id: 4, item: '保暖發熱衣/外套', checked: false }
+            ]);
+
+            // --- 4. 伴手禮清單 ---
+            const [souvenirs, setSouvenirs] = useState([
+                { id: 1, person: '爸爸', gift: '莫札特巧克力', bought: false },
+                { id: 2, person: '媽媽', gift: '菠丹妮保養品', bought: false }
+            ]);
+
+            // 定時更新
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => clearInterval(timer);
+            }, []);
+
+            // 時區邏輯
+            const pragueTime = useMemo(() => {
+                const offset = 7; // 冬令時台北快 7 小時
+                return new Date(currentTime.getTime() - (offset * 60 * 60 * 1000));
+            }, [currentTime]);
+
+            const tripStatus = useMemo(() => {
+                const nowStr = pragueTime.getHours().toString().padStart(2, '0') + ":" + pragueTime.getMinutes().toString().padStart(2, '0');
+                const today = pragueTime.toISOString().split('T')[0];
+                
+                if (today < itinerary[0].date) return "旅程即將開始...";
+                if (today > itinerary[itinerary.length - 1].date) return "旅程已結束";
+
+                const dayPlan = itinerary.find(d => d.date === today);
+                if (!dayPlan) return "今日無預定行程";
+
+                const past = dayPlan.events.filter(e => e.time <= nowStr).sort((a,b) => b.time.localeCompare(a.time));
+                return past.length > 0 ? `${nowStr} ${past[0].location}` : "今日旅程尚未開始";
+            }, [pragueTime, itinerary]);
+
+            // --- 修改與新增邏輯 ---
+            const toggleEdit = (section) => setEditStates(prev => ({ ...prev, [section]: !prev[section] }));
+
+            const addItem = (section) => {
+                if(section === 'packing') setPackingList([...packingList, { id: Date.now(), item: '新物品', checked: false }]);
+                if(section === 'souvenir') setSouvenirs([...souvenirs, { id: Date.now(), person: '對象', gift: '禮物內容', bought: false }]);
+            };
+
+            const deleteItem = (section, id) => {
+                if(section === 'packing') setPackingList(packingList.filter(p => p.id !== id));
+                if(section === 'souvenir') setSouvenirs(souvenirs.filter(s => s.id !== id));
+            };
+
+            return (
+                <div className="max-w-md mx-auto min-h-screen bg-black text-white pb-24 relative overflow-x-hidden">
+                    {activeTab === 'home' && (
+                        <div className="p-6 space-y-8 animate-in fade-in duration-700">
+                            <header className="flex justify-between items-center py-4">
+                                <h1 className="text-3xl font-black italic tracking-tighter">TRAV <span className="text-purple-600">PRO</span></h1>
+                                <Icon name="globe" className="text-purple-500" />
+                            </header>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-gray-900 border border-gray-800 p-5 rounded-[2rem]">
+                                    <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">台北 (TW)</p>
+                                    <h3 className="text-2xl font-black">{currentTime.getHours().toString().padStart(2, '0')}:{currentTime.getMinutes().toString().padStart(2, '0')}</h3>
+                                </div>
+                                <div className="bg-purple-900/10 border border-purple-500/30 p-5 rounded-[2rem] relative">
+                                    <div className="absolute top-3 right-4 h-2 w-2 animate-ping bg-purple-500 rounded-full"></div>
+                                    <p className="text-[10px] text-purple-400 font-bold uppercase tracking-widest mb-1">捷奧 (EU)</p>
+                                    <h3 className="text-2xl font-black">{pragueTime.getHours().toString().padStart(2, '0')}:{pragueTime.getMinutes().toString().padStart(2, '0')}</h3>
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-purple-900/40 to-black p-8 rounded-[2.5rem] border border-purple-500/20 shadow-2xl relative">
+                                <p className="text-[10px] text-purple-400 font-black mb-2 uppercase tracking-[0.2em]">Live Status</p>
+                                <h2 className="text-2xl font-bold leading-tight">{tripStatus}</h2>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <QuickAction icon={<Icon name="calendar" />} label="詳細行程" onClick={() => setActiveTab('itinerary')} color="bg-purple-600" />
+                                <QuickAction icon={<Icon name="navigation" />} label="交通指南" onClick={() => setActiveTab('transport')} color="bg-blue-600" />
+                                <QuickAction icon={<Icon name="package" />} label="行李清單" onClick={() => setActiveTab('packing')} color="bg-pink-600" />
+                                <QuickAction icon={<Icon name="gift" />} label="伴手禮" onClick={() => setActiveTab('souvenir')} color="bg-orange-600" />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'itinerary' && (
+                        <div className="p-6 space-y-8 animate-in slide-in-from-right">
+                            <div className="flex justify-between items-center sticky top-0 bg-black/90 py-4 z-20">
+                                <h2 className="text-2xl font-black">詳細行程</h2>
+                                <button onClick={() => toggleEdit('itinerary')} className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${editStates.itinerary ? 'bg-green-600 text-white' : 'bg-gray-800 text-purple-400'}`}>
+                                    {editStates.itinerary ? '保存' : '編輯'}
+                                </button>
+                            </div>
+                            {itinerary.map((day, dIdx) => (
+                                <div key={dIdx} className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className="bg-purple-900 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">{day.day}</span>
+                                        <span className="text-gray-500 text-xs font-mono">{day.date}</span>
+                                    </div>
+                                    <div className="ml-2 border-l border-gray-800 pl-6 space-y-6">
+                                        {day.events.map((event, eIdx) => {
+                                            const isNow = !editStates.itinerary && tripStatus.includes(event.location);
+                                            return (
+                                                <div key={event.id} className="relative group">
+                                                    {isNow && <div className="absolute -left-[31px] h-3 w-3 bg-purple-500 rounded-full animate-glow shadow-[0_0_15px_purple]"></div>}
+                                                    <div className={`p-5 rounded-[2.5rem] border transition-all ${isNow ? 'bg-purple-900/10 border-purple-500 shadow-xl' : 'bg-gray-900/40 border-gray-800'}`}>
+                                                        {editStates.itinerary ? (
+                                                            <div className="space-y-3">
+                                                                <input value={event.time} onChange={(e) => {
+                                                                    const n = [...itinerary]; n[dIdx].events[eIdx].time = e.target.value; setItinerary(n);
+                                                                }} className="bg-black border border-gray-800 p-2 rounded-xl text-purple-400 text-sm w-full"/>
+                                                                <input value={event.location} onChange={(e) => {
+                                                                    const n = [...itinerary]; n[dIdx].events[eIdx].location = e.target.value; setItinerary(n);
+                                                                }} className="bg-black border border-gray-800 p-2 rounded-xl text-white text-sm w-full"/>
+                                                                <button onClick={() => {
+                                                                    const n = [...itinerary]; n[dIdx].events.splice(eIdx, 1); setItinerary(n);
+                                                                }} className="text-red-500 text-xs flex items-center gap-1"><Icon name="trash-2" size={14} /> 刪除</button>
+                                                            </div>
+                                                        ) : (
+                                                            <>
+                                                                <div className="text-purple-500 font-mono text-[10px] font-black mb-1">{event.time}</div>
+                                                                <h4 className="font-bold leading-tight">{event.location}</h4>
+                                                                {event.note && <p className="text-gray-500 text-[10px] mt-2 italic font-medium">「 {event.note} 」</p>}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {editStates.itinerary && (
+                                            <button onClick={() => {
+                                                const n = [...itinerary]; n[dIdx].events.push({ id: Date.now(), time: '12:00', location: '新地點', note: '' }); setItinerary(n);
+                                            }} className="w-full py-3 border border-dashed border-gray-800 rounded-3xl text-xs text-gray-500">+ 新增景點</button>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {activeTab === 'transport' && (
+                        <div className="p-6 space-y-6 animate-in slide-in-from-right">
+                            <div className="flex justify-between items-center">
+                                <h2 className="text-2xl font-black">交通指南</h2>
+                                <button onClick={() => toggleEdit('transport')} className="text-xs font-bold text-purple-400 bg-gray-800 px-4 py-2 rounded-full">
+                                    {editStates.transport ? '完成' : '編輯'}
+                                </button>
+                            </div>
+                            {transportation.map(t => (
+                                <div key={t.id} className={`rounded-[2.5rem] overflow-hidden shadow-2xl transition-all ${editStates.transport ? 'bg-gray-900 border border-gray-700 p-6' : 'bg-white text-black'}`}>
+                                    {editStates.transport ? (
+                                        <div className="space-y-4">
+                                            <input value={t.from} onChange={(e) => setTransportation(transportation.map(x=>x.id===t.id?{...x, from:e.target.value}:x))} className="bg-black p-2 rounded-xl w-full text-sm border border-gray-800 text-white"/>
+                                            <Icon name="arrow-down" className="mx-auto text-purple-500" />
+                                            <input value={t.to} onChange={(e) => setTransportation(transportation.map(x=>x.id===t.id?{...x, to:e.target.value}:x))} className="bg-black p-2 rounded-xl w-full text-sm border border-gray-800 text-white"/>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input value={t.trainNo} placeholder="車次" onChange={(e)=>setTransportation(transportation.map(x=>x.id===t.id?{...x, trainNo:e.target.value}:x))} className="bg-black p-2 rounded-xl text-center text-xs border border-purple-900 text-purple-400"/>
+                                                <input value={t.platform} placeholder="月台" onChange={(e)=>setTransportation(transportation.map(x=>x.id===t.id?{...x, platform:e.target.value}:x))} className="bg-black p-2 rounded-xl text-center text-xs border border-gray-800 text-white"/>
+                                                <input value={t.carNo} placeholder="車廂" onChange={(e)=>setTransportation(transportation.map(x=>x.id===t.id?{...x, carNo:e.target.value}:x))} className="bg-black p-2 rounded-xl text-center text-xs border border-gray-800 text-white"/>
+                                                <input value={t.seatNo} placeholder="座位" onChange={(e)=>setTransportation(transportation.map(x=>x.id===t.id?{...x, seatNo:e.target.value}:x))} className="bg-black p-2 rounded-xl text-center text-xs border border-gray-800 text-white"/>
+                                            </div>
+                                            <button onClick={()=>setTransportation(transportation.filter(x=>x.id!==t.id))} className="w-full text-red-500 text-[10px] font-bold py-1 mt-2 border border-red-900/20 rounded-lg">刪除此段交通</button>
+                                        </div>
+                                    ) : (
+                                        <div className="relative">
+                                            <div className="bg-purple-600 p-6 text-white text-center">
+                                                <div className="flex justify-between items-center mb-6">
+                                                    <span className="text-[9px] font-black px-2 py-1 bg-white/20 rounded uppercase tracking-widest">{t.date} TICKET</span>
+                                                    <Icon name="train" size={24} className="opacity-80" />
+                                                </div>
+                                                <div className="flex items-center justify-between px-2">
+                                                    <div className="w-24">
+                                                        <p className="text-[10px] opacity-60 font-black uppercase">Origin</p>
+                                                        <h3 className="text-3xl font-black tracking-tighter">{t.from}</h3>
+                                                    </div>
+                                                    <div className="flex-1 flex flex-col items-center">
+                                                        <div className="w-full border-t border-dashed border-white/40 relative">
+                                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-600 px-3 py-1 border border-white/30 rounded-full shadow-xl">
+                                                                <span className="text-[11px] font-black whitespace-nowrap tracking-wider">{t.trainNo}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-24">
+                                                        <p className="text-[10px] opacity-60 font-black uppercase">Dest</p>
+                                                        <h3 className="text-3xl font-black tracking-tighter">{t.to}</h3>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-6 flex justify-between px-2 text-[10px] font-bold opacity-70">
+                                                    <span className="truncate max-w-[80px]">{t.fromFull}</span>
+                                                    <span className="truncate max-w-[80px] text-right">{t.toFull}</span>
+                                                </div>
+                                            </div>
+                                            <div className="bg-white p-7 grid grid-cols-3 gap-4 border-t border-gray-100 relative">
+                                                <div className="absolute -top-3 -left-3 w-6 h-6 bg-black rounded-full"></div>
+                                                <div className="absolute -top-3 -right-3 w-6 h-6 bg-black rounded-full"></div>
+                                                <div className="text-center">
+                                                    <p className="text-[9px] text-gray-400 font-black uppercase mb-1">PLAT</p>
+                                                    <p className="font-black text-xl">{t.platform}</p>
+                                                </div>
+                                                <div className="text-center border-x border-gray-100 px-2">
+                                                    <p className="text-[9px] text-gray-400 font-black uppercase mb-1">CAR</p>
+                                                    <p className="font-black text-xl">{t.carNo}</p>
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-[9px] text-gray-400 font-black uppercase mb-1">SEAT</p>
+                                                    <p className="font-black text-xl leading-none py-1">{t.seatNo}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {activeTab === 'packing' && (
+                        <div className="p-6 space-y-6 animate-in slide-in-from-right">
+                            <div className="flex justify-between items-center sticky top-0 bg-black/90 py-4 z-20">
+                                <h2 className="text-2xl font-black text-white">行李檢查</h2>
+                                <button onClick={() => toggleEdit('packing')} className={`px-5 py-2 rounded-full text-xs font-bold ${editStates.packing ? 'bg-green-600 text-white' : 'bg-gray-800 text-purple-400'}`}>
+                                    {editStates.packing ? '完成' : '編輯'}
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                {packingList.map(item => (
+                                    <div key={item.id} className="flex items-center gap-4 p-5 bg-gray-900 rounded-[2.5rem] border border-gray-800 transition-all active:scale-[0.98]">
+                                        <button onClick={() => setPackingList(packingList.map(p=>p.id===item.id?{...p, checked:!p.checked}:p))} className={`p-1 rounded-full border-2 transition-all ${item.checked ? 'bg-purple-500 border-purple-500 shadow-[0_0_10px_purple]' : 'border-gray-700'}`}>
+                                            <Icon name="check" size={16} className={item.checked ? 'text-white' : 'text-transparent'} />
+                                        </button>
+                                        <div className="flex-1">
+                                            {editStates.packing ? (
+                                                <input value={item.item} onChange={(e)=>setPackingList(packingList.map(p=>p.id===item.id?{...p, item:e.target.value}:p))} className="bg-black border border-gray-700 rounded-lg px-2 py-1 w-full text-white text-sm outline-none focus:border-purple-500"/>
+                                            ) : (
+                                                <span className={`font-bold transition-all ${item.checked ? 'text-gray-600 line-through font-normal' : 'text-white'}`}>{item.item}</span>
+                                            )}
+                                        </div>
+                                        {editStates.packing && (
+                                            <button onClick={() => deleteItem('packing', item.id)} className="text-gray-600 hover:text-red-500"><Icon name="trash-2" size={18} /></button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                            <button onClick={() => addItem('packing')} className="w-full py-5 bg-purple-900/10 border border-purple-500/20 rounded-[2.5rem] text-purple-400 font-black tracking-widest text-xs uppercase shadow-xl">+ ADD ITEM</button>
+                        </div>
+                    )}
+
+                    {activeTab === 'souvenir' && (
+                        <div className="p-6 space-y-6 animate-in slide-in-from-right">
+                            <div className="flex justify-between items-center sticky top-0 bg-black/90 py-4 z-20">
+                                <h2 className="text-2xl font-black text-white">伴手禮清單</h2>
+                                <button onClick={() => toggleEdit('souvenir')} className={`px-5 py-2 rounded-full text-xs font-bold ${editStates.souvenir ? 'bg-green-600 text-white' : 'bg-gray-800 text-purple-400'}`}>
+                                    {editStates.souvenir ? '完成' : '編輯'}
+                                </button>
+                            </div>
+                            <div className="grid gap-4">
+                                {souvenirs.map(s => (
+                                    <div key={s.id} className="p-6 bg-gray-900 border border-gray-800 rounded-[2.5rem] flex items-center justify-between shadow-lg active:scale-[0.98] transition-all">
+                                        <div className="flex items-center gap-5 flex-1">
+                                            <button onClick={() => setSouvenirs(souvenirs.map(i=>i.id===s.id?{...i, bought:!i.bought}:i))} className={`p-4 rounded-2xl transition-all ${s.bought ? 'bg-purple-600 shadow-[0_0_15px_purple]' : 'bg-gray-800'}`}>
+                                                <Icon name="gift" size={24} className={s.bought ? 'text-white' : 'text-gray-500'} />
+                                            </button>
+                                            <div className="flex-1 space-y-1">
+                                                {editStates.souvenir ? (
+                                                    <>
+                                                        <input value={s.person} placeholder="對象" onChange={(e)=>setSouvenirs(souvenirs.map(x=>x.id===s.id?{...x, person:e.target.value}:x))} className="bg-black border border-gray-700 rounded-lg px-2 py-1 w-full text-purple-400 text-[10px] outline-none mb-1"/>
+                                                        <input value={s.gift} placeholder="禮物" onChange={(e)=>setSouvenirs(souvenirs.map(x=>x.id===s.id?{...x, gift:e.target.value}:x))} className="bg-black border border-gray-700 rounded-lg px-2 py-1 w-full text-white text-sm font-bold outline-none"/>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <p className="text-purple-500 text-[10px] font-black uppercase tracking-widest">{s.person}</p>
+                                                        <h4 className={`text-lg font-bold ${s.bought ? 'text-gray-600 line-through' : 'text-white'}`}>{s.gift}</h4>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {editStates.souvenir && (
+                                            <button onClick={() => deleteItem('souvenir', s.id)} className="ml-4 text-gray-700"><Icon name="trash-2" size={20} /></button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button onClick={() => addItem('souvenir')} className="w-full py-5 bg-purple-900/10 border border-purple-500/20 rounded-[2.5rem] text-purple-400 font-black tracking-widest text-xs shadow-xl">+ NEW ENTRY</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* 底部導航 */}
+                    <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[92%] bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] px-4 py-2 z-50 flex justify-between items-center shadow-2xl">
+                        <NavIcon id="home" icon="map-pin" active={activeTab === 'home'} onClick={setActiveTab} />
+                        <NavIcon id="itinerary" icon="calendar" active={activeTab === 'itinerary'} onClick={setActiveTab} />
+                        <div className="h-8 w-[1px] bg-white/10 mx-1"></div>
+                        <NavIcon id="transport" icon="navigation" active={activeTab === 'transport'} onClick={setActiveTab} />
+                        <NavIcon id="packing" icon="package" active={activeTab === 'packing'} onClick={setActiveTab} />
+                        <NavIcon id="souvenir" icon="gift" active={activeTab === 'souvenir'} onClick={setActiveTab} />
+                    </nav>
+                </div>
+            );
+        };
+
+        const QuickAction = ({ icon, label, onClick, color }) => (
+            <button onClick={onClick} className="h-36 bg-gray-900/40 border border-gray-800 rounded-[2.5rem] flex flex-col items-center justify-center gap-3 hover:bg-purple-900/10 transition-all shadow-sm group active:scale-95">
+                <div className={`p-4 rounded-2xl ${color} text-white shadow-xl group-hover:scale-110 transition-transform`}>{icon}</div>
+                <span className="text-[11px] font-black text-gray-400 tracking-tighter uppercase">{label}</span>
+            </button>
+        );
+
+        const NavIcon = ({ id, icon: IconName, active, onClick }) => (
+            <button onClick={() => onClick(id)} className={`p-4 transition-all duration-300 rounded-full ${active ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/50' : 'text-gray-500 hover:text-white'}`}>
+                <Icon name={id === 'transport' ? 'navigation' : IconName} size={20} />
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
